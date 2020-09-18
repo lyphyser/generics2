@@ -1,7 +1,430 @@
+#![no_std]
+#![deny(warnings)]
+
+#[doc(hidden)]
+pub use core::compile_error as std_compile_error;
+#[doc(hidden)]
+pub use core::concat as std_concat;
+#[doc(hidden)]
+pub use core::stringify as std_stringify;
+
+#[macro_export]
+macro_rules! generics_shim {
+    (
+        [$callback:path] [$($head:tt)*] [ < $($token:tt)* ]
+    ) => {
+        $crate::generics_shim_impl! { [$callback] [$($head)*] [] [] [$($token)*] }
+    };
+    (
+        [$callback:path] [$($head:tt)*] [ $($token:tt)* ]
+    ) => {
+        $callback ! { $($head)* [] [] [$($token)*] }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! generics_shim_impl {
+    (
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [$param:ident $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! { 
+            @param
+            [$param]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [$param:lifetime $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! { 
+            @param
+            [$param]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [$x:tt $($token:tt)*]
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "unexpected token '",
+            $crate::std_stringify!($x),
+            "', expected ident"
+        ));
+    };
+    (
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!();
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ : $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @constrained_param
+            [$param]
+            []
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @break
+            [$callback] [$($head)*]
+            [$($g)* [$param]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @break
+            [$callback] [$($head)*]
+            [$($g)* [$param]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            [$callback] [$($head)*]
+            [$($g)* [$param]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [$x:tt $($token:tt)*]
+    ) => {
+        $crate::std_compile_error!();
+    };
+    (
+        @param
+        [$param:tt]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!();
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ < $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @angles_in_constraint
+            [$param]
+            [$($constraint)*]
+            [] []
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @break
+            [$callback] [$($head)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @break
+            [$callback] [$($head)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            [$callback] [$($head)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ $x:tt $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @constrained_param
+            [$param]
+            [$($constraint)* $x]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!();
+    };
+    (
+        @angles_in_constraint
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$($inside_angles:tt)*]
+        []
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @constrained_param
+            [$param]
+            [$($constraint)* < $($inside_angles)* > ]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @angles_in_constraint
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$($inside_angles:tt)*]
+        [[$($parent_level:tt)*] $([$($outer_levels:tt)*])*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ > $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @angles_in_constraint
+            [$param] [$($constraint)*]
+            [$($parent_level)* < $($inside_angles)* > ]
+            [$([$($outer_levels)*])*]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @angles_in_constraint
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$($inside_angles:tt)*]
+        [$([$($outer_levels:tt)*])*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ < $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @angles_in_constraint
+            [$param] [$($constraint)*]
+            []
+            [[$($inside_angles:tt)*] $([$($outer_levels)*])*]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @angles_in_constraint
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$($inside_angles:tt)*]
+        [$([$($outer_levels:tt)*])*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [$x:tt $($token:tt)*]
+    ) => {
+        $crate::generics_shim_impl! {
+            @angles_in_constraint
+            [$param] [$($constraint)*]
+            [$($inside_angles)* $x]
+            [$([$($outer_levels)*])*]
+            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$($token)*]
+        }
+    };
+    (
+        @angles_in_constraint
+        [$param:tt]
+        [$($constraint:tt)*]
+        [$($inside_angles:tt)*]
+        [$([$($outer_levels:tt)*])*]
+        [$callback:path]
+        [$($head:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!();
+    };
+    (
+        @break
+        [$callback:path]
+        [$($head:tt)*]
+        [$([$($g:tt)*])+]
+        [$([$($r:tt)*])+]
+        [$($token:tt)*]
+    ) => {
+        $callback ! {
+            $($head)*
+            [ < $($($g)*),+ > ]
+            [ < $($($r)*),+ > ]
+            [$($token)*]
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
+    macro_rules! impl_test_trait {
+        (
+            struct $name:ident $($token:tt)*
+        ) => {
+            generics_shim! {
+                [impl_test_trait] [@impl [$name]] [$($token)*]
+            }
+        };
+        (
+            @impl
+            [$name:ident] [$($g:tt)*] [$($r:tt)*] [$($body:tt)+]
+        ) => {
+            impl $($g)* TestTrait for $name $($r)* { }
+        };
+    }
+
+    trait TestTrait { }
+
+    struct TestStruct { }
+
+    impl_test_trait! {
+        struct TestStruct { }
+    }
+
+    struct TestGenericStruct<'a, T: 'static> {
+        a: &'a (),
+        t: T,
+    }
+
+    impl_test_trait! {
+        struct TestGenericStruct<'a, T: 'static> { }
+    }
+
     #[test]
     fn it_works() {
-        assert_eq!(2 + 2, 4);
+        let test_struct = TestStruct { };
+        let _: &dyn TestTrait = &test_struct;
+        let test_generic_struct = TestGenericStruct {
+            a: &(),
+            t: ()
+        };
+        let _ = test_generic_struct.a;
+        let _ = test_generic_struct.t;
+        let _: &dyn TestTrait = &test_generic_struct;
     }
 }
