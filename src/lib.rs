@@ -9,16 +9,16 @@ pub use core::concat as std_concat;
 pub use core::stringify as std_stringify;
 
 #[macro_export]
-macro_rules! shim_and_where_clause {
+macro_rules! parse {
     (
         $callback:path { $($callback_args:tt)* } < $($token:tt)*
     ) => {
-        $crate::shim_impl! { [$crate::where_clause_impl] [ <> [$callback] [$($callback_args)*]] [] [] [$($token)*] }
+        $crate::parse_generics_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
     };
     (
-        $callback:path { $($callback_args:tt)* } where $($token:tt)*
+        $callback:path { $($callback_args:tt)* } $(($($tuple:tt)*))? where $($token:tt)*
     ) => {
-        $crate::where_clause_impl! { [$callback] [$($callback_args)* [] []] [] [$($token)*] }
+        $crate::parse_where_clause_impl! { [$callback] [$($callback_args)*] [] [] [] [$(($($tuple)*))?] [$($token)*] }
     };
     (
         $callback:path { $($callback_args:tt)* } $($token:tt)*
@@ -27,116 +27,9 @@ macro_rules! shim_and_where_clause {
     };
 }
 
-#[macro_export]
-macro_rules! where_clause {
-    (
-        $callback:path { $($callback_args:tt)* } where $($token:tt)*
-    ) => {
-        $crate::where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
-    };
-    (
-        $callback:path { $($callback_args:tt)* } $($token:tt)*
-    ) => {
-        $callback ! { $($callback_args)* [] $($token)* }
-    };
-}
-
-#[macro_export]
-macro_rules! shim {
-    (
-        $callback:path { $($callback_args:tt)* } < $($token:tt)*
-    ) => {
-        $crate::shim_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
-    };
-    (
-        $callback:path { $($callback_args:tt)* } $($token:tt)*
-    ) => {
-        $callback ! { $($callback_args)* [] [] $($token)* }
-    };
-}
-
 #[doc(hidden)]
 #[macro_export]
-macro_rules! where_clause_impl {
-    (
-        <>
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*] [$($r:tt)*]
-        [ where $($token:tt)*]
-    ) => {
-        $crate::where_clause_impl! { 
-            [$callback]
-            [$($callback_args)* [$($g)*] [$($r)*]]
-            []
-            [$($token)*]
-        }
-    };
-    (
-        <>
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*] [$($r:tt)*]
-        [$($token:tt)*]
-    ) => {
-        $callback ! { 
-            $($callback_args)* [$($g)*] [$($r)*] [] $($token)*
-        }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($w:tt)*]
-        [ ; ]
-    ) => {
-        $callback ! { 
-            $($callback_args)*
-            [$($w)*]
-            ;
-        }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($w:tt)*]
-        [ { $($body:tt)* } ]
-    ) => {
-        $callback ! { 
-            $($callback_args)*
-            [$($w)*]
-            { $($body)* }
-        }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($w:tt)*]
-        [$token:tt $($other_tokens:tt)*]
-    ) => {
-        $crate::where_clause_impl! { 
-            [$callback]
-            [$($callback_args)*]
-            [$($w)* $token]
-            [$($other_tokens)*]
-        }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($w:tt)*]
-        []
-    ) => {
-        $crate::std_compile_error!($crate::std_concat!(
-            "missing ';' or '{' after '",
-            $crate::std_stringify!($($w)*),
-            "'"
-        ));
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! shim_impl {
+macro_rules! parse_generics_impl {
     (
         [$callback:path]
         [$($callback_args:tt)*]
@@ -144,7 +37,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [$param:ident $($token:tt)*]
     ) => {
-        $crate::shim_impl! { 
+        $crate::parse_generics_impl! { 
             @param
             [$param]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
@@ -158,7 +51,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [$param:lifetime $($token:tt)*]
     ) => {
-        $crate::shim_impl! { 
+        $crate::parse_generics_impl! { 
             @param
             [$param]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
@@ -200,7 +93,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ : $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @constrained_param
             [$param]
             []
@@ -217,8 +110,8 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
-            @break
+        $crate::parse_generics_impl! {
+            @done
             [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
@@ -234,8 +127,8 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
-            @break
+        $crate::parse_generics_impl! {
+            @done
             [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
@@ -251,7 +144,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
@@ -298,7 +191,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ < $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @angles_in_constraint
             [$param]
             [$($constraint)*]
@@ -317,8 +210,8 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
-            @break
+        $crate::parse_generics_impl! {
+            @done
             [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
@@ -335,8 +228,8 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
-            @break
+        $crate::parse_generics_impl! {
+            @done
             [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
@@ -353,7 +246,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
@@ -370,7 +263,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ $x:tt $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @constrained_param
             [$param]
             [$($constraint)* $x]
@@ -406,7 +299,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @constrained_param
             [$param]
             [$($constraint)* < $($inside_angles)* > ]
@@ -426,7 +319,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             [$($parent_level)* < $($inside_angles)* > ]
@@ -447,7 +340,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [ < $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             []
@@ -468,7 +361,7 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
     ) => {
-        $crate::shim_impl! {
+        $crate::parse_generics_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             [$($inside_angles)* $x]
@@ -499,7 +392,23 @@ macro_rules! shim_impl {
         ));
     };
     (
-        @break
+        @done
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$([$($g:tt)*])+]
+        [$([$($r:tt)*])+]
+        [$(($($tuple:tt)*))? where $($token:tt)*]
+    ) => {
+        $crate::parse_where_clause_impl! {
+            [$callback]
+            [$($callback_args)*]
+            [ < $($($g)*),+ > ]
+            [ < $($($r)*),+ > ]
+            [] [$(($($tuple)*))?] [$($token)*]
+        }
+    };
+    (
+        @done
         [$callback:path]
         [$($callback_args:tt)*]
         [$([$($g:tt)*])+]
@@ -510,8 +419,102 @@ macro_rules! shim_impl {
             $($callback_args)*
             [ < $($($g)*),+ > ]
             [ < $($($r)*),+ > ]
-            [$($token)*]
+            []
+            $($token)*
         }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! parse_where_clause_impl {
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($($w:tt)+)?]
+        [$(($($tuple:tt)*))?] 
+        [ ; ]
+    ) => {
+        $callback ! { 
+            $($callback_args)*
+            [$($g)*]
+            [$($r)*]
+            [$(where $($w)+)?]
+            $(($($tuple:tt)*))?
+            ;
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($w:tt)*]
+        [($($tuple:tt)*)] 
+        [ { $($body:tt)* } ]
+    ) => {
+        $crate::std_compile_error!("unexpected token '{', expected ';'");
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($($w:tt)+)?]
+        [] 
+        [ { $($body:tt)* } ]
+    ) => {
+        $callback ! { 
+            $($callback_args)*
+            [$($g)*]
+            [$($r)*]
+            [$(where $($w)+)?]
+            { $($body)* }
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($w:tt)*]
+        [$(($($tuple:tt)*))?] 
+        [$token:tt $($other_tokens:tt)*]
+    ) => {
+        $crate::parse_where_clause_impl! { 
+            [$callback]
+            [$($callback_args)*]
+            [$($g)*] [$($r)*]
+            [$($w)* $token]
+            [$(($($tuple)*))?] 
+            [$($other_tokens)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($w:tt)*]
+        [($($tuple:tt)*)] 
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing ';' after '",
+            $crate::std_stringify!($($w)*),
+            "'"
+        ));
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($w:tt)*]
+        [] 
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing ';' or '{' after '",
+            $crate::std_stringify!($($w)*),
+            "'"
+        ));
     };
 }
 
@@ -521,7 +524,7 @@ mod tests {
         (
             struct $name:ident $($token:tt)*
         ) => {
-            shim! {
+            parse! {
                 impl_test_trait {
                     @impl struct $name
                 }
@@ -529,9 +532,9 @@ mod tests {
             }
         };
         (
-            @impl struct $name:ident [$($g:tt)*] [$($r:tt)*] $($body:tt)*
+            @impl struct $name:ident [$($g:tt)*] [$($r:tt)*] [$($w:tt)*] $($body:tt)*
         ) => {
-            impl $($g)* TestTrait for $name $($r)* { }
+            impl $($g)* TestTrait for $name $($r)* $($w)* { }
         };
     }
 
