@@ -522,12 +522,11 @@ mod tests {
             struct $name:ident $($token:tt)*
         ) => {
             shim! {
-                [impl_test_trait] [@impl [$name]] [$($token)*]
+                [impl_test_trait] [@impl struct $name] [$($token)*]
             }
         };
         (
-            @impl
-            [$name:ident] [$($g:tt)*] [$($r:tt)*] [$($body:tt)+]
+            @impl struct $name:ident [$($g:tt)*] [$($r:tt)*] $($body:tt)*
         ) => {
             impl $($g)* TestTrait for $name $($r)* { }
         };
