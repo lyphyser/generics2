@@ -115,6 +115,7 @@ macro_rules! parse_generics_impl {
             [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
+            []
             [$($token)*]
         }
     };
@@ -132,6 +133,7 @@ macro_rules! parse_generics_impl {
             [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
+            []
             [$($token)*]
         }
     };
@@ -215,6 +217,7 @@ macro_rules! parse_generics_impl {
             [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
+            []
             [$($token)*]
         }
     };
@@ -233,6 +236,7 @@ macro_rules! parse_generics_impl {
             [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
+            []
             [$($token)*]
         }
     };
@@ -397,14 +401,15 @@ macro_rules! parse_generics_impl {
         [$($callback_args:tt)*]
         [$([$($g:tt)*])+]
         [$([$($r:tt)*])+]
-        [$(($($tuple:tt)*))? where $($token:tt)*]
+        [$($inter:tt)*]
+        [ ; $($token:tt)*]
     ) => {
-        $crate::parse_where_clause_impl! {
-            [$callback]
-            [$($callback_args)*]
+        $callback ! {
+            $($callback_args)*
             [ < $($($g)*),+ > ]
             [ < $($($r)*),+ > ]
-            [] [$(($($tuple)*))?] [$($token)*]
+            []
+            $($inter)* ; $($token)*
         }
     };
     (
@@ -413,15 +418,69 @@ macro_rules! parse_generics_impl {
         [$($callback_args:tt)*]
         [$([$($g:tt)*])+]
         [$([$($r:tt)*])+]
-        [$($token:tt)*]
+        [$($inter:tt)*]
+        [ { $($body:tt)* } $($token:tt)*]
     ) => {
         $callback ! {
             $($callback_args)*
             [ < $($($g)*),+ > ]
             [ < $($($r)*),+ > ]
             []
-            $($token)*
+            $($inter)* { $($body)* } $($token)*
         }
+    };
+    (
+        @done
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$([$($g:tt)*])+]
+        [$([$($r:tt)*])+]
+        [$($inter:tt)*]
+        [where $($token:tt)*]
+    ) => {
+        $crate::parse_where_clause_impl! {
+            [$callback]
+            [$($callback_args)*]
+            [ < $($($g)*),+ > ]
+            [ < $($($r)*),+ > ]
+            [] [$($inter)*] [$($token)*]
+        }
+    };
+    (
+        @done
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)+]
+        [$($r:tt)+]
+        [$($inter:tt)*]
+        [$token:tt $($other_tokens:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @done
+            [$callback] [$($callback_args)*]
+            [$($g)+]
+            [$($r)+]
+            [$($inter)* $token]
+            [$($other_tokens)*]
+        }
+    };
+    (
+        @done
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$([$($g:tt)*])+]
+        [$([$($r:tt)*])+]
+        [$($inter:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing ';', '{', or 'where' after '",
+            $crate::std_stringify!(
+                < $($($g)*),+ >
+                [$($inter)*]
+            ),
+            "'"
+        ));
     };
 }
 
@@ -433,7 +492,7 @@ macro_rules! parse_where_clause_impl {
         [$($callback_args:tt)*]
         [$($g:tt)*] [$($r:tt)*]
         [$($($w:tt)+)?]
-        [$(($($tuple:tt)*))?] 
+        [$($inter:tt)*] 
         [ ; $($token:tt)* ]
     ) => {
         $callback ! { 
@@ -441,26 +500,15 @@ macro_rules! parse_where_clause_impl {
             [$($g)*]
             [$($r)*]
             [$(where $($w)+)?]
-            $(($($tuple:tt)*))?
-            ; $($token)*
+            $($inter)* ; $($token)*
         }
     };
     (
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*] [$($r:tt)*]
-        [$($w:tt)*]
-        [($($tuple:tt)*)] 
-        [ { $($body:tt)* } $($token:tt)* ]
-    ) => {
-        $crate::std_compile_error!("unexpected token '{', expected ';'");
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*] [$($r:tt)*]
         [$($($w:tt)+)?]
-        [] 
+        [$($inter:tt)*] 
         [ { $($body:tt)* } $($token:tt)* ]
     ) => {
         $callback ! { 
@@ -468,7 +516,7 @@ macro_rules! parse_where_clause_impl {
             [$($g)*]
             [$($r)*]
             [$(where $($w)+)?]
-            { $($body)* } $($token)*
+            $($inter)* { $($body)* } $($token)*
         }
     };
     (
@@ -476,7 +524,7 @@ macro_rules! parse_where_clause_impl {
         [$($callback_args:tt)*]
         [$($g:tt)*] [$($r:tt)*]
         [$($w:tt)*]
-        [$(($($tuple:tt)*))?] 
+        [$($inter:tt)*] 
         [$token:tt $($other_tokens:tt)*]
     ) => {
         $crate::parse_where_clause_impl! { 
@@ -484,7 +532,7 @@ macro_rules! parse_where_clause_impl {
             [$($callback_args)*]
             [$($g)*] [$($r)*]
             [$($w)* $token]
-            [$(($($tuple)*))?] 
+            [$($inter)*]
             [$($other_tokens)*]
         }
     };
@@ -493,21 +541,7 @@ macro_rules! parse_where_clause_impl {
         [$($callback_args:tt)*]
         [$($g:tt)*] [$($r:tt)*]
         [$($w:tt)*]
-        [($($tuple:tt)*)] 
-        []
-    ) => {
-        $crate::std_compile_error!($crate::std_concat!(
-            "missing ';' after '",
-            $crate::std_stringify!($($w)*),
-            "'"
-        ));
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*] [$($r:tt)*]
-        [$($w:tt)*]
-        [] 
+        [$($inter:tt)*] 
         []
     ) => {
         $crate::std_compile_error!($crate::std_concat!(
@@ -566,5 +600,33 @@ mod tests {
         let _ = test_generic_struct.a;
         let _ = test_generic_struct.t;
         let _: &dyn TestTrait = &test_generic_struct;
+    }
+
+    macro_rules! impl_tr {
+        (
+            struct $name:ident $($token:tt)*
+        ) => {
+            parse! {
+                impl_tr {
+                    @impl struct $name
+                }
+                $($token)*
+            }
+        };
+        (
+            @impl struct $name:ident [$($g:tt)*] [$($r:tt)*] [$($w:tt)*] become $tr:ident $($body:tt)*
+        ) => {
+            impl $($g)* $tr for $name $($r)* $($w)* { }
+        };
+    }
+
+    trait TestTrait2 { }
+
+    impl_tr! {
+        struct TestStruct become TestTrait2 { }
+    }
+
+    impl_tr! {
+        struct TestGenericStruct<'a, T> become TestTrait2 where T: 'static { }
     }
 }
