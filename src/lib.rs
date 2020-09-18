@@ -23,7 +23,7 @@ macro_rules! shim_and_where_clause {
     (
         [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
     ) => {
-        $callback ! { $($callback_args)* [] [] [] [$($token)*] }
+        $callback ! { $($callback_args)* [] [] [] $($token)* }
     };
 }
 
@@ -37,7 +37,7 @@ macro_rules! where_clause {
     (
         [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
     ) => {
-        $callback ! { $($callback_args)* [] [$($token)*] }
+        $callback ! { $($callback_args)* [] $($token)* }
     };
 }
 
@@ -51,7 +51,7 @@ macro_rules! shim {
     (
         [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
     ) => {
-        $callback ! { $($callback_args)* [] [] [$($token)*] }
+        $callback ! { $($callback_args)* [] [] $($token)* }
     };
 }
 
@@ -80,7 +80,7 @@ macro_rules! where_clause_impl {
         [$($token:tt)*]
     ) => {
         $callback ! { 
-            $($callback_args)* [$($g)*] [$($r)*] [] [$($token)*]
+            $($callback_args)* [$($g)*] [$($r)*] [] $($token)*
         }
     };
     (
@@ -92,7 +92,7 @@ macro_rules! where_clause_impl {
         $callback ! { 
             $($callback_args)*
             [$($w)*]
-            [ ; ]
+            ;
         }
     };
     (
@@ -104,7 +104,7 @@ macro_rules! where_clause_impl {
         $callback ! { 
             $($callback_args)*
             [$($w)*]
-            [ { $($body)* } ]
+            { $($body)* }
         }
     };
     (
@@ -127,9 +127,9 @@ macro_rules! where_clause_impl {
         []
     ) => {
         $crate::std_compile_error!($crate::std_concat!(
-            "unexpected end after '",
+            "missing ';' or '{' after '",
             $crate::std_stringify!($($w)*),
-            "'; expected ';', or '{'"
+            "'"
         ));
     };
 }
@@ -175,17 +175,21 @@ macro_rules! shim_impl {
         $crate::std_compile_error!($crate::std_concat!(
             "unexpected token '",
             $crate::std_stringify!($x),
-            "', expected ident"
+            "', expected ident, or lifetime"
         ));
     };
     (
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)*]
+        [$($([$($g:tt)*])+)?]
         [$($r:tt)*]
         []
     ) => {
-        $crate::std_compile_error!();
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing '>' after '",
+            $crate::std_stringify!( < $($($($g)*),+ ,)? ),
+            "'"
+        ));
     };
     (
         @param
@@ -263,18 +267,26 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
     ) => {
-        $crate::std_compile_error!();
+        $crate::std_compile_error!($crate::std_concat!(
+            "unexpected token '",
+            $crate::std_stringify!($x),
+            "', expected ':', ',', or '>'"
+        ));
     };
     (
         @param
         [$param:tt]
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)*]
+        [$($([$($g:tt)*])+)?]
         [$($r:tt)*]
         []
     ) => {
-        $crate::std_compile_error!();
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing '>' after '",
+            $crate::std_stringify!( < $($($($g)*),+ ,)? $param ),
+            "'"
+        ));
     };
     (
         @constrained_param
@@ -376,7 +388,11 @@ macro_rules! shim_impl {
         [$($r:tt)*]
         []
     ) => {
-        $crate::std_compile_error!();
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing '>' after '",
+            $crate::std_stringify!( < $($($($g)*),+ ,)? $param : $($constraint)* ),
+            "'"
+        ));
     };
     (
         @angles_in_constraint
@@ -469,11 +485,18 @@ macro_rules! shim_impl {
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)*]
+        [$($([$($g:tt)*])+)?]
         [$($r:tt)*]
         []
     ) => {
-        $crate::std_compile_error!();
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing '>' after '",
+            $crate::std_stringify!(
+                < $($($($g)*),+ ,)? $param : $($constraint)*
+                $( < $($outer_levels)* )* < $($inside_angles)*
+            ),
+            "'"
+        ));
     };
     (
         @break
