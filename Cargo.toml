@@ -1,0 +1,12 @@
+[package]
+edition = "2018"
+name = "generics-macro-parser"
+version = "0.0.1"
+authors = ["warlock <internalmike@gmail.com>"]
+description = "Provides macros for parsing generics and where clauses in `macro_rules!`."
+readme = "README.md"
+documentation = "https://docs.rs/generics-macro-parser/"
+keywords = ["macro", "parser", "generics", "where", "macro_rules"]
+categories = ["rust-patterns", "no-std"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/A1-Triard/generics-macro-parser"
