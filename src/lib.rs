@@ -18,7 +18,7 @@ macro_rules! parse {
     (
         $callback:path { $($callback_args:tt)* } $(($($tuple:tt)*))? where $($token:tt)*
     ) => {
-        $crate::parse_where_clause_impl! { [$callback] [$($callback_args)*] [] [] [] [$(($($tuple)*))?] [$($token)*] }
+        $crate::std_compile_error!("unexpected 'where' without generics preceding");
     };
     (
         $callback:path { $($callback_args:tt)* } $($token:tt)*
