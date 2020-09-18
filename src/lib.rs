@@ -11,17 +11,17 @@ pub use core::stringify as std_stringify;
 #[macro_export]
 macro_rules! shim_and_where_clause {
     (
-        [$callback:path] [$($callback_args:tt)*] [ < $($token:tt)* ]
+        $callback:path { $($callback_args:tt)* } < $($token:tt)*
     ) => {
         $crate::shim_impl! { [$crate::where_clause_impl] [ <> [$callback] [$($callback_args)*]] [] [] [$($token)*] }
     };
     (
-        [$callback:path] [$($callback_args:tt)*] [ where $($token:tt)* ]
+        $callback:path { $($callback_args:tt)* } where $($token:tt)*
     ) => {
         $crate::where_clause_impl! { [$callback] [$($callback_args)* [] []] [] [$($token)*] }
     };
     (
-        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+        $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
         $callback ! { $($callback_args)* [] [] [] $($token)* }
     };
@@ -30,12 +30,12 @@ macro_rules! shim_and_where_clause {
 #[macro_export]
 macro_rules! where_clause {
     (
-        [$callback:path] [$($callback_args:tt)*] [ where $($token:tt)* ]
+        $callback:path { $($callback_args:tt)* } where $($token:tt)*
     ) => {
         $crate::where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
     };
     (
-        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+        $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
         $callback ! { $($callback_args)* [] $($token)* }
     };
@@ -44,12 +44,12 @@ macro_rules! where_clause {
 #[macro_export]
 macro_rules! shim {
     (
-        [$callback:path] [$($callback_args:tt)*] [ < $($token:tt)* ]
+        $callback:path { $($callback_args:tt)* } < $($token:tt)*
     ) => {
         $crate::shim_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
     };
     (
-        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+        $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
         $callback ! { $($callback_args)* [] [] $($token)* }
     };
@@ -522,7 +522,10 @@ mod tests {
             struct $name:ident $($token:tt)*
         ) => {
             shim! {
-                [impl_test_trait] [@impl struct $name] [$($token)*]
+                impl_test_trait {
+                    @impl struct $name
+                }
+                $($token)*
             }
         };
         (
