@@ -434,7 +434,7 @@ macro_rules! parse_where_clause_impl {
         [$($g:tt)*] [$($r:tt)*]
         [$($($w:tt)+)?]
         [$(($($tuple:tt)*))?] 
-        [ ; ]
+        [ ; $($token:tt)* ]
     ) => {
         $callback ! { 
             $($callback_args)*
@@ -442,7 +442,7 @@ macro_rules! parse_where_clause_impl {
             [$($r)*]
             [$(where $($w)+)?]
             $(($($tuple:tt)*))?
-            ;
+            ; $($token)*
         }
     };
     (
@@ -451,7 +451,7 @@ macro_rules! parse_where_clause_impl {
         [$($g:tt)*] [$($r:tt)*]
         [$($w:tt)*]
         [($($tuple:tt)*)] 
-        [ { $($body:tt)* } ]
+        [ { $($body:tt)* } $($token:tt)* ]
     ) => {
         $crate::std_compile_error!("unexpected token '{', expected ';'");
     };
@@ -461,14 +461,14 @@ macro_rules! parse_where_clause_impl {
         [$($g:tt)*] [$($r:tt)*]
         [$($($w:tt)+)?]
         [] 
-        [ { $($body:tt)* } ]
+        [ { $($body:tt)* } $($token:tt)* ]
     ) => {
         $callback ! { 
             $($callback_args)*
             [$($g)*]
             [$($r)*]
             [$(where $($w)+)?]
-            { $($body)* }
+            { $($body)* } $($token)*
         }
     };
     (
