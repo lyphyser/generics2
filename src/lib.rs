@@ -9,11 +9,11 @@ pub use core::concat as std_concat;
 pub use core::stringify as std_stringify;
 
 #[macro_export]
-macro_rules! generics_shim {
+macro_rules! shim {
     (
         [$callback:path] [$($head:tt)*] [ < $($token:tt)* ]
     ) => {
-        $crate::generics_shim_impl! { [$callback] [$($head)*] [] [] [$($token)*] }
+        $crate::shim_impl! { [$callback] [$($head)*] [] [] [$($token)*] }
     };
     (
         [$callback:path] [$($head:tt)*] [ $($token:tt)* ]
@@ -24,7 +24,7 @@ macro_rules! generics_shim {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! generics_shim_impl {
+macro_rules! shim_impl {
     (
         [$callback:path]
         [$($head:tt)*]
@@ -32,7 +32,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [$param:ident $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! { 
+        $crate::shim_impl! { 
             @param
             [$param]
             [$callback] [$($head)*] [$($g)*] [$($r)*] 
@@ -46,7 +46,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [$param:lifetime $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! { 
+        $crate::shim_impl! { 
             @param
             [$param]
             [$callback] [$($head)*] [$($g)*] [$($r)*] 
@@ -84,7 +84,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ : $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @constrained_param
             [$param]
             []
@@ -101,7 +101,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @break
             [$callback] [$($head)*]
             [$($g)* [$param]]
@@ -118,7 +118,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @break
             [$callback] [$($head)*]
             [$($g)* [$param]]
@@ -135,7 +135,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             [$callback] [$($head)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
@@ -174,7 +174,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ < $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @angles_in_constraint
             [$param]
             [$($constraint)*]
@@ -193,7 +193,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @break
             [$callback] [$($head)*]
             [$($g)* [$param : $($constraint)*]]
@@ -211,7 +211,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @break
             [$callback] [$($head)*]
             [$($g)* [$param : $($constraint)*]]
@@ -229,7 +229,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             [$callback] [$($head)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
@@ -246,7 +246,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ $x:tt $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @constrained_param
             [$param]
             [$($constraint)* $x]
@@ -278,7 +278,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @constrained_param
             [$param]
             [$($constraint)* < $($inside_angles)* > ]
@@ -298,7 +298,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             [$($parent_level)* < $($inside_angles)* > ]
@@ -319,7 +319,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [ < $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             []
@@ -340,7 +340,7 @@ macro_rules! generics_shim_impl {
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
     ) => {
-        $crate::generics_shim_impl! {
+        $crate::shim_impl! {
             @angles_in_constraint
             [$param] [$($constraint)*]
             [$($inside_angles)* $x]
@@ -386,7 +386,7 @@ mod tests {
         (
             struct $name:ident $($token:tt)*
         ) => {
-            generics_shim! {
+            shim! {
                 [impl_test_trait] [@impl [$name]] [$($token)*]
             }
         };
