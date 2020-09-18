@@ -9,16 +9,128 @@ pub use core::concat as std_concat;
 pub use core::stringify as std_stringify;
 
 #[macro_export]
-macro_rules! shim {
+macro_rules! shim_and_where_clause {
     (
-        [$callback:path] [$($head:tt)*] [ < $($token:tt)* ]
+        [$callback:path] [$($callback_args:tt)*] [ < $($token:tt)* ]
     ) => {
-        $crate::shim_impl! { [$callback] [$($head)*] [] [] [$($token)*] }
+        $crate::shim_impl! { [$crate::where_clause_impl] [ <> [$callback] [$($callback_args)*]] [] [] [$($token)*] }
     };
     (
-        [$callback:path] [$($head:tt)*] [ $($token:tt)* ]
+        [$callback:path] [$($callback_args:tt)*] [ where $($token:tt)* ]
     ) => {
-        $callback ! { $($head)* [] [] [$($token)*] }
+        $crate::where_clause_impl! { [$callback] [$($callback_args)* [] []] [] [$($token)*] }
+    };
+    (
+        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+    ) => {
+        $callback ! { $($callback_args)* [] [] [] [$($token)*] }
+    };
+}
+
+#[macro_export]
+macro_rules! where_clause {
+    (
+        [$callback:path] [$($callback_args:tt)*] [ where $($token:tt)* ]
+    ) => {
+        $crate::where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
+    };
+    (
+        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+    ) => {
+        $callback ! { $($callback_args)* [] [$($token)*] }
+    };
+}
+
+#[macro_export]
+macro_rules! shim {
+    (
+        [$callback:path] [$($callback_args:tt)*] [ < $($token:tt)* ]
+    ) => {
+        $crate::shim_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
+    };
+    (
+        [$callback:path] [$($callback_args:tt)*] [$($token:tt)*]
+    ) => {
+        $callback ! { $($callback_args)* [] [] [$($token)*] }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! where_clause_impl {
+    (
+        <>
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [ where $($token:tt)*]
+    ) => {
+        $crate::where_clause_impl! { 
+            [$callback]
+            [$($callback_args)* [$($g)*] [$($r)*]]
+            []
+            [$($token)*]
+        }
+    };
+    (
+        <>
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*]
+        [$($token:tt)*]
+    ) => {
+        $callback ! { 
+            $($callback_args)* [$($g)*] [$($r)*] [] [$($token)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($w:tt)*]
+        [ ; ]
+    ) => {
+        $callback ! { 
+            $($callback_args)*
+            [$($w)*]
+            [ ; ]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($w:tt)*]
+        [ { $($body:tt)* } ]
+    ) => {
+        $callback ! { 
+            $($callback_args)*
+            [$($w)*]
+            [ { $($body)* } ]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($w:tt)*]
+        [$token:tt $($other_tokens:tt)*]
+    ) => {
+        $crate::where_clause_impl! { 
+            [$callback]
+            [$($callback_args)*]
+            [$($w)* $token]
+            [$($other_tokens)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($w:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "unexpected end after '",
+            $crate::std_stringify!($($w)*),
+            "'; expected ';', or '{'"
+        ));
     };
 }
 
@@ -27,7 +139,7 @@ macro_rules! shim {
 macro_rules! shim_impl {
     (
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [$param:ident $($token:tt)*]
@@ -35,13 +147,13 @@ macro_rules! shim_impl {
         $crate::shim_impl! { 
             @param
             [$param]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
     (
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [$param:lifetime $($token:tt)*]
@@ -49,13 +161,13 @@ macro_rules! shim_impl {
         $crate::shim_impl! { 
             @param
             [$param]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
     (
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
@@ -68,7 +180,7 @@ macro_rules! shim_impl {
     };
     (
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         []
@@ -79,7 +191,7 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ : $($token:tt)*]
@@ -88,7 +200,7 @@ macro_rules! shim_impl {
             @constrained_param
             [$param]
             []
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -96,14 +208,14 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
         $crate::shim_impl! {
             @break
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
             [$($token)*]
@@ -113,14 +225,14 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
         $crate::shim_impl! {
             @break
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
             [$($token)*]
@@ -130,13 +242,13 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
         $crate::shim_impl! {
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param]]
             [$($r)* [$param]]
             [$($token)*]
@@ -146,7 +258,7 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
@@ -157,7 +269,7 @@ macro_rules! shim_impl {
         @param
         [$param:tt]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         []
@@ -169,7 +281,7 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ < $($token:tt)*]
@@ -179,7 +291,7 @@ macro_rules! shim_impl {
             [$param]
             [$($constraint)*]
             [] []
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -188,14 +300,14 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ > $($token:tt)*]
     ) => {
         $crate::shim_impl! {
             @break
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
             [$($token)*]
@@ -206,14 +318,14 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ , > $($token:tt)*]
     ) => {
         $crate::shim_impl! {
             @break
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
             [$($token)*]
@@ -224,13 +336,13 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ , $($token:tt)*]
     ) => {
         $crate::shim_impl! {
-            [$callback] [$($head)*]
+            [$callback] [$($callback_args)*]
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
             [$($token)*]
@@ -241,7 +353,7 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ $x:tt $($token:tt)*]
@@ -250,7 +362,7 @@ macro_rules! shim_impl {
             @constrained_param
             [$param]
             [$($constraint)* $x]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -259,7 +371,7 @@ macro_rules! shim_impl {
         [$param:tt]
         [$($constraint:tt)*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         []
@@ -273,7 +385,7 @@ macro_rules! shim_impl {
         [$($inside_angles:tt)*]
         []
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ > $($token:tt)*]
@@ -282,7 +394,7 @@ macro_rules! shim_impl {
             @constrained_param
             [$param]
             [$($constraint)* < $($inside_angles)* > ]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -293,7 +405,7 @@ macro_rules! shim_impl {
         [$($inside_angles:tt)*]
         [[$($parent_level:tt)*] $([$($outer_levels:tt)*])*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ > $($token:tt)*]
@@ -303,7 +415,7 @@ macro_rules! shim_impl {
             [$param] [$($constraint)*]
             [$($parent_level)* < $($inside_angles)* > ]
             [$([$($outer_levels)*])*]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -314,7 +426,7 @@ macro_rules! shim_impl {
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [ < $($token:tt)*]
@@ -324,7 +436,7 @@ macro_rules! shim_impl {
             [$param] [$($constraint)*]
             []
             [[$($inside_angles:tt)*] $([$($outer_levels)*])*]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -335,7 +447,7 @@ macro_rules! shim_impl {
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         [$x:tt $($token:tt)*]
@@ -345,7 +457,7 @@ macro_rules! shim_impl {
             [$param] [$($constraint)*]
             [$($inside_angles)* $x]
             [$([$($outer_levels)*])*]
-            [$callback] [$($head)*] [$($g)*] [$($r)*] 
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
     };
@@ -356,7 +468,7 @@ macro_rules! shim_impl {
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
         []
@@ -366,13 +478,13 @@ macro_rules! shim_impl {
     (
         @break
         [$callback:path]
-        [$($head:tt)*]
+        [$($callback_args:tt)*]
         [$([$($g:tt)*])+]
         [$([$($r:tt)*])+]
         [$($token:tt)*]
     ) => {
         $callback ! {
-            $($head)*
+            $($callback_args)*
             [ < $($($g)*),+ > ]
             [ < $($($r)*),+ > ]
             [$($token)*]
