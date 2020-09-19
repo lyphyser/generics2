@@ -16,14 +16,9 @@ macro_rules! parse {
         $crate::parse_generics_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
     };
     (
-        $callback:path { $($callback_args:tt)* } $(($($tuple:tt)*))? where $($token:tt)*
-    ) => {
-        $crate::std_compile_error!("unexpected 'where' without generics preceding");
-    };
-    (
         $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
-        $callback ! { $($callback_args)* [] [] [] $($token)* }
+        $crate::deny_where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
     };
 }
 
@@ -547,6 +542,74 @@ macro_rules! parse_where_clause_impl {
         $crate::std_compile_error!($crate::std_concat!(
             "missing ';' or '{' after '",
             $crate::std_stringify!($($w)*),
+            "'"
+        ));
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! deny_where_clause_impl {
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($inter:tt)*]
+        [ ; $($token:tt)*]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            []
+            []
+            []
+            $($inter)* ; $($token)*
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($inter:tt)*]
+        [ { $($body:tt)* } $($token:tt)*]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            []
+            []
+            []
+            $($inter)* { $($body)* } $($token)*
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($inter:tt)*]
+        [where $($token:tt)*]
+    ) => {
+        $crate::std_compile_error!("unexpected 'where' without generics preceding");
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($inter:tt)*]
+        [$token:tt $($other_tokens:tt)*]
+    ) => {
+        $crate::deny_where_clause_impl! {
+            [$callback] [$($callback_args)*]
+            [$($inter)* $token]
+            [$($other_tokens)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($inter:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing ';', '{', or 'where' after '",
+            $crate::std_stringify!(
+                < $($($g)*),+ >
+                [$($inter)*]
+            ),
             "'"
         ));
     };
