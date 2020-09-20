@@ -8,6 +8,57 @@ pub use core::concat as std_concat;
 #[doc(hidden)]
 pub use core::stringify as std_stringify;
 
+/// Parses (optional) generics and (optional) subsequent where clause.
+///
+/// Stops at ';' or '{' token.
+///
+/// This macro accepts an input in the following form:
+///
+/// `$callback_macro { $($callback_macro_args)* } $($token)*`
+///
+/// and expands into
+///
+/// ```ignore
+/// $callback_macro! {
+///     $( $callback_macro_args )*
+///     [ $( < $generics_definition > )? ]
+///     [ $( < $generics_usage > )? ]
+///     [ $( where $where_clause )? ]
+///     $( $tokens_between_generics_and_where_clause )*
+///     $( $remaining_tokens_after_parsed_generics_and_where_clause )*
+/// }
+/// ```
+/// # Examples
+///
+/// ```rust
+/// pub trait TheTrait { }
+///
+/// #[macro_export]
+/// macro_rules! impl_the_trait {
+///     (
+///         $name:ident $($token:tt)*
+///     ) => {
+///         $crate::generics_parse! {
+///             $crate::impl_the_trait {
+///                 @impl $name
+///             }
+///             $($token)*
+///         }
+///     };
+///     (
+///         @impl $name:ident [$($g:tt)*] [$($r:tt)*] [$($w:tt)*]
+///     ) => {
+///         impl $($g)* $crate::TheTrait for $name $($r)* $($w)* { }
+///     };
+///     (
+///         @impl $name:ident [$($g:tt)*] [$($r:tt)*] [$($w:tt)*] $($token:tt)+ 
+///     ) => {
+///         $crate::std_compile_error!(
+///             "invalid input, allowed input is '$name $( < $generics > $(where $where_clause )? )?'"
+///         );
+///     };
+/// }
+/// ```
 #[macro_export]
 macro_rules! parse {
     (
@@ -414,14 +465,14 @@ macro_rules! parse_generics_impl {
         [$([$($g:tt)*])+]
         [$([$($r:tt)*])+]
         [$($inter:tt)*]
-        [ { $($body:tt)* } $($token:tt)*]
+        [ $( { $($body:tt)* } $($token:tt)* )? ]
     ) => {
         $callback ! {
             $($callback_args)*
             [ < $($($g)*),+ > ]
             [ < $($($r)*),+ > ]
             []
-            $($inter)* { $($body)* } $($token)*
+            $($inter)* $( { $($body)* } $($token)* )?
         }
     };
     (
@@ -459,24 +510,6 @@ macro_rules! parse_generics_impl {
             [$($other_tokens)*]
         }
     };
-    (
-        @done
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$([$($g:tt)*])+]
-        [$([$($r:tt)*])+]
-        [$($inter:tt)*]
-        []
-    ) => {
-        $crate::std_compile_error!($crate::std_concat!(
-            "missing ';', '{', or 'where' after '",
-            $crate::std_stringify!(
-                < $($($g)*),+ >
-                [$($inter)*]
-            ),
-            "'"
-        ));
-    };
 }
 
 #[doc(hidden)]
@@ -504,14 +537,14 @@ macro_rules! parse_where_clause_impl {
         [$($g:tt)*] [$($r:tt)*]
         [$($($w:tt)+)?]
         [$($inter:tt)*] 
-        [ { $($body:tt)* } $($token:tt)* ]
+        [ $( { $($body:tt)* } $($token:tt)* )? ]
     ) => {
         $callback ! { 
             $($callback_args)*
             [$($g)*]
             [$($r)*]
             [$(where $($w)+)?]
-            $($inter)* { $($body)* } $($token)*
+            $($inter)* $( { $($body)* } $($token)* )?
         }
     };
     (
@@ -530,20 +563,6 @@ macro_rules! parse_where_clause_impl {
             [$($inter)*]
             [$($other_tokens)*]
         }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*] [$($r:tt)*]
-        [$($w:tt)*]
-        [$($inter:tt)*] 
-        []
-    ) => {
-        $crate::std_compile_error!($crate::std_concat!(
-            "missing ';' or '{' after '",
-            $crate::std_stringify!($($w)*),
-            "'"
-        ));
     };
 }
 
@@ -568,14 +587,14 @@ macro_rules! deny_where_clause_impl {
         [$callback:path]
         [$($callback_args:tt)*]
         [$($inter:tt)*]
-        [ { $($body:tt)* } $($token:tt)*]
+        [ $( { $($body:tt)* } $($token:tt)* )? ]
     ) => {
         $callback ! {
             $($callback_args)*
             []
             []
             []
-            $($inter)* { $($body)* } $($token)*
+            $($inter)* $( { $($body)* } $($token)* )?
         }
     };
     (
@@ -597,21 +616,6 @@ macro_rules! deny_where_clause_impl {
             [$($inter)* $token]
             [$($other_tokens)*]
         }
-    };
-    (
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($inter:tt)*]
-        []
-    ) => {
-        $crate::std_compile_error!($crate::std_concat!(
-            "missing ';', '{', or 'where' after '",
-            $crate::std_stringify!(
-                < $($($g)*),+ >
-                [$($inter)*]
-            ),
-            "'"
-        ));
     };
 }
 
