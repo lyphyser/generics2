@@ -33,6 +33,11 @@ pub use core::stringify as std_stringify;
 /// ```rust
 /// pub trait TheTrait { }
 ///
+/// #[doc(hidden)]
+/// pub use generics::parse as generics_parse;
+/// #[doc(hidden)]
+/// pub use std::compile_error as std_compile_error;
+///
 /// #[macro_export]
 /// macro_rules! impl_the_trait {
 ///     (
