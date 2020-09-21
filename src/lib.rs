@@ -21,8 +21,8 @@ pub use core::stringify as std_stringify;
 ///     )?
 /// )?
 /// $(
-///     $( ; | { $(body)* } )
-///     $( $remaining_tokens )*
+///     $( ; | { $($body)* } )
+///     $($remaining_tokens)*
 /// )?
 /// ```
 /// and expands into
@@ -34,8 +34,8 @@ pub use core::stringify as std_stringify;
 ///     [ $( where $where_clause )? ]
 ///     $( $tokens_between_generics_and_where_clause )*
 ///     $(
-///         $( ; | { $(body)* } )
-///         $( $remaining_tokens )*
+///         $( ; | { $($body)* } )
+///         $($remaining_tokens)*
 ///     )?
 /// }
 /// ```
