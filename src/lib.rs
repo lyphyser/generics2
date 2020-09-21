@@ -10,8 +10,6 @@ pub use core::stringify as std_stringify;
 
 /// Parses (optional) generics and (optional) subsequent where clause.
 ///
-/// Stops at `;` or `{` token.
-///
 /// This macro accepts an input in the following form:
 /// ```ignore
 /// $callback_macro { $($callback_macro_args)* }
