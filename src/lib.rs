@@ -26,6 +26,7 @@ pub use core::stringify as std_stringify;
 ///     $( ; | { $(body)* } )
 ///     $( $remaining_tokens )*
 /// )?
+/// ```
 /// and expands into
 /// ```ignore
 /// $callback_macro! {
