@@ -10,14 +10,23 @@ pub use core::stringify as std_stringify;
 
 /// Parses (optional) generics and (optional) subsequent where clause.
 ///
-/// Stops at ';' or '{' token.
+/// Stops at `;` or `{` token.
 ///
 /// This macro accepts an input in the following form:
-///
-/// `$callback_macro { $($callback_macro_args)* } $($token)*`
-///
+/// ```ignore
+/// $callback_macro { $($callback_macro_args)* }
+/// $(
+///     <$generics_definition>
+///     $(
+///         $( $tokens_between_generics_and_where_clause )*
+///         where $where_clause
+///     )?
+/// )?
+/// $(
+///     $( ; | { $(body)* } )
+///     $( $remaining_tokens )*
+/// )?
 /// and expands into
-///
 /// ```ignore
 /// $callback_macro! {
 ///     $( $callback_macro_args )*
@@ -25,7 +34,10 @@ pub use core::stringify as std_stringify;
 ///     [ $( < $generics_usage > )? ]
 ///     [ $( where $where_clause )? ]
 ///     $( $tokens_between_generics_and_where_clause )*
-///     $( $remaining_tokens_after_parsed_generics_and_where_clause )*
+///     $(
+///         $( ; | { $(body)* } )
+///         $( $remaining_tokens )*
+///     )?
 /// }
 /// ```
 /// # Examples
