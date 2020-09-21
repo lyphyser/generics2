@@ -33,7 +33,7 @@ macro_rules! impl_the_trait {
         @impl $name:ident [$($g:tt)*] [$($r:tt)*] [$($w:tt)*] $($token:tt)+ 
     ) => {
         $crate::std_compile_error!(
-            "invalid input, allowed input is '$name $( < $generics > $(where $where_clause )? )?'"
+            "invalid input, allowed input is '$name $( < $generics > $(where $where_clause)? )?'"
         );
     };
 }
