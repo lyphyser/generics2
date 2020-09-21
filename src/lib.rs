@@ -16,7 +16,7 @@ pub use core::stringify as std_stringify;
 /// ```ignore
 /// $callback_macro { $($callback_macro_args)* }
 /// $(
-///     <$generics_definition>
+///     < $generics >
 ///     $(
 ///         $( $tokens_between_generics_and_where_clause )*
 ///         where $where_clause
@@ -31,8 +31,8 @@ pub use core::stringify as std_stringify;
 /// ```ignore
 /// $callback_macro! {
 ///     $( $callback_macro_args )*
-///     [ $( < $generics_definition > )? ]
-///     [ $( < $generics_usage > )? ]
+///     [ $( < $generics > )? ]
+///     [ $( < $generics_without_constraints > )? ]
 ///     [ $( where $where_clause )? ]
 ///     $( $tokens_between_generics_and_where_clause )*
 ///     $(
