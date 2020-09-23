@@ -635,6 +635,323 @@ macro_rules! deny_where_clause_impl {
     };
 }
 
+/*
+#[macro_export]
+macro_rules! concat {
+    (
+        $callback:path { $($callback_args:tt)* }
+        $($([$($g:tt)*] [$($r:tt)*] [$($w:tt)*]),+ $(,)?)?
+    ) => {
+        $crate::concat_impl! {
+            @g
+            [$callback] [$($callback_args)*] [$($([$($r)*])+)?] [$($([$($w)*])+)?]
+            [$($([$($g)*])+)?]
+            [] []
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! concat_impl {
+    (
+        @gs
+        [$callback:path] [$($callback_args:tt)*] [$($r:tt)*] [$($w:tt)*]
+        [[] $($gs:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::concat_impl! {
+            @gs
+            [$callback] [$($callback_args)*] [$($r)*] [$($w)*]
+            [$($gs)*]
+            [$($lifetimes)*] [$($types)*]
+        }
+    };
+}
+*/
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! concat_g {
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[ < $($item:tt)* ] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+            []
+            [$($item)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[$($item:tt)*] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [] []
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            []
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [$([$($lifetime:tt)*])+] []
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($lifetime)*),+ > ]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [] [$([$($ty:tt)*])+]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($ty)*),+ > ]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [$([$($lifetime:tt)*])+] [$([$($ty:tt)*])+]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($lifetime)*),+ , $($($ty)*),+ > ]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$lifetime:lifetime $($constraint:tt)*]
+        [, $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)* [$lifetime $($constraint)*]] [$($types)*]
+            []
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$ty:ident $($constraint:tt)*]
+        [, $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)* [$ty $($constraint)*]]
+            []
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$($param:tt)*]
+        [ < $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @angles
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*] [$($param)*]
+            []
+            []
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$lifetime:lifetime $($constraint:tt)*]
+        [ > ]
+    ) => {
+        $crate::concat_g! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)* [$lifetime $($constraint)*]] [$($types)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$ty:ident $($constraint:tt)*]
+        [ > ]
+    ) => {
+        $crate::concat_g! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)*] [$($types)* [$ty $($constraint)*]]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        []
+        [ > ]
+    ) => {
+        $crate::concat_g! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$($param:tt)*]
+        [ > $($tail:tt)+ ]
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$($param:tt)*]
+        [$token:tt $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+            [$($param)* $token]
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$($param:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+    (
+        @angles
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*] [$($param:tt)*]
+        [$($outer_levels:tt)*]
+        [$($content:tt)*]
+        [ < $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @angles
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*] [$($param)*]
+            [[$($content)*] $($outer_levels)*]
+            []
+            [$($tail)*]
+        }
+    };
+    (
+        @angles
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*] [$($param:tt)*]
+        [[$($outer_level:tt)*] $($other_outer_levels:tt)*]
+        [$($content:tt)*]
+        [ > $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @angles
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*] [$($param)*]
+            [$($other_outer_levels)*]
+            [$($outer_level)* < $($content)* > ]
+            [$($tail)*]
+        }
+    };
+    (
+        @angles
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*] [$($param:tt)*]
+        []
+        [$($content:tt)*]
+        [ > $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+            [$($param)* < $($content)* > ]
+            [$($tail)*]
+        }
+    };
+    (
+        @angles
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*] [$($param:tt)*]
+        [$($outer_levels:tt)*]
+        [$($content:tt)*]
+        [ $token:tt $($tail:tt)*]
+    ) => {
+        $crate::concat_g! {
+            @angles
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*] [$($param)*]
+            [$($outer_levels)*]
+            [$($content)* $token]
+            [$($tail)*]
+        }
+    };
+    (
+        @angles
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*] [$($param:tt)*]
+        [$($outer_levels:tt)*]
+        [$($content:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+}
+
 #[cfg(test)]
 mod tests {
     macro_rules! impl_test_trait {
@@ -711,5 +1028,38 @@ mod tests {
 
     impl_tr! {
         struct TestGenericStruct<'a, T> become TestTrait2 where T: 'static { }
+    }
+
+    macro_rules! struct_A {
+        (
+        ) => {
+            concat_g! {
+                @list
+                [struct_A] [@struct]
+                [[ < 'a, 'b > ] [ < 'c, 'd, T, > ]]
+                [] []
+            }
+        };
+        (
+            @struct [$($g:tt)*]
+        ) => {
+            struct A $($g)* {
+                a: &'a (),
+                b: &'b (),
+                c: &'c (),
+                d: &'d T,
+            }
+        };
+    }
+
+    struct_A!();
+
+    #[test]
+    fn run_concat_g() {
+        let x = A { a: &(), b: &(), c: &(), d: &0u16 };
+        let _ = x.a;
+        let _ = x.b;
+        let _ = x.c;
+        let _ = x.d;
     }
 }
