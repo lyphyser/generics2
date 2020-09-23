@@ -635,7 +635,6 @@ macro_rules! deny_where_clause_impl {
     };
 }
 
-/*
 #[macro_export]
 macro_rules! concat {
     (
@@ -643,10 +642,8 @@ macro_rules! concat {
         $($([$($g:tt)*] [$($r:tt)*] [$($w:tt)*]),+ $(,)?)?
     ) => {
         $crate::concat_impl! {
-            @g
-            [$callback] [$($callback_args)*] [$($([$($r)*])+)?] [$($([$($w)*])+)?]
-            [$($([$($g)*])+)?]
-            [] []
+            [$callback] [$($callback_args)*]
+            [$($([$($g)*])+)?] [$($([$($r)*])+)?] [$($([$($w)*])+)?]
         }
     };
 }
@@ -655,20 +652,51 @@ macro_rules! concat {
 #[macro_export]
 macro_rules! concat_impl {
     (
-        @gs
-        [$callback:path] [$($callback_args:tt)*] [$($r:tt)*] [$($w:tt)*]
-        [[] $($gs:tt)*]
-        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$callback:path] [$($callback_args:tt)*]
+        [$($g:tt)*] [$($r:tt)*] [$($w:tt)*]
     ) => {
-        $crate::concat_impl! {
-            @gs
-            [$callback] [$($callback_args)*] [$($r)*] [$($w)*]
-            [$($gs)*]
-            [$($lifetimes)*] [$($types)*]
+        $crate::concat_g_impl! {
+            @list
+            [$crate::concat_impl] [@g [$callback] [$($callback_args)*] [$($r)*] [$($w)*]]
+            [$($g)*]
+            [] []
+        }
+    };
+    (
+        @g
+        [$callback:path] [$($callback_args:tt)*] [$($r:tt)*] [$($w:tt)*]
+        [$($g:tt)*]
+    ) => {
+        $crate::concat_r_impl! {
+            @list
+            [$crate::concat_impl] [@r [$callback] [$($callback_args)*] [$($g)*] [$($w)*]]
+            [$($r)*]
+            [] []
+        }
+    };
+    (
+        @r
+        [$callback:path] [$($callback_args:tt)*] [$($g:tt)*] [$($w:tt)*]
+        [$($r:tt)*]
+    ) => {
+        $crate::concat_w_impl! {
+            @list
+            [$crate::concat_impl] [@w [$callback] [$($callback_args)*] [$($g)*] [$($r)*]]
+            [$($w)*]
+            []
+        }
+    };
+    (
+        @w
+        [$callback:path] [$($callback_args:tt)*] [$($g:tt)*] [$($r:tt)*]
+        [$($w:tt)*]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [$($g)*] [$($r)*] [$($w)*]
         }
     };
 }
-*/
 
 #[doc(hidden)]
 #[macro_export]
@@ -1079,6 +1107,99 @@ macro_rules! concat_r_impl {
         [$($tail:tt)*]
     ) => {
         $crate::std_compile_error!("invalid generics");
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! concat_w_impl {
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[] $($list:tt)*]
+        [$($w:tt)*]
+    ) => {
+        $crate::concat_w_impl! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($w)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[ where ] $($list:tt)*]
+        [$($w:tt)*]
+    ) => {
+        $crate::concat_w_impl! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($w)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[ where $($item:tt)* ] $($list:tt)*]
+        [$($w:tt)*]
+    ) => {
+        $crate::concat_w_impl! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($w)*]
+            []
+            [$($item)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[$($item:tt)*] $($list:tt)*]
+        [$($w:tt)*]
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [$($([$($w:tt)*])+)?]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [$(where $($($w)*),+)?]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($w:tt)*]
+        [$($item:tt)*]
+        [$(,)?]
+    ) => {
+        $crate::concat_w_impl! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($w)* [$($item)*]]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($w:tt)*]
+        [$($item:tt)*]
+        [$token:tt $($tail:tt)*]
+    ) => {
+        $crate::concat_w_impl! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($w)*]
+            [$($item)* $token]
+            [$($tail)*]
+        }
     };
 }
 
