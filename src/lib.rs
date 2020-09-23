@@ -635,6 +635,7 @@ macro_rules! deny_where_clause_impl {
     };
 }
 
+/// Concats several [`parse`](parse) calls results together.
 #[macro_export]
 macro_rules! concat {
     (
