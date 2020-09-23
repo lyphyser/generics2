@@ -672,14 +672,14 @@ macro_rules! concat_impl {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! concat_g {
+macro_rules! concat_g_impl {
     (
         @list
         [$callback:path] [$($callback_args:tt)*]
         [[] $($list:tt)*]
         [$($lifetimes:tt)*] [$($types:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @list
             [$callback] [$($callback_args)*]
             [$($list)*]
@@ -692,7 +692,7 @@ macro_rules! concat_g {
         [[ < $($item:tt)* ] $($list:tt)*]
         [$($lifetimes:tt)*] [$($types:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @item
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*]
@@ -759,7 +759,7 @@ macro_rules! concat_g {
         [$lifetime:lifetime $($constraint:tt)*]
         [, $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @item
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)* [$lifetime $($constraint)*]] [$($types)*]
@@ -774,7 +774,7 @@ macro_rules! concat_g {
         [$ty:ident $($constraint:tt)*]
         [, $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @item
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)* [$ty $($constraint)*]]
@@ -789,7 +789,7 @@ macro_rules! concat_g {
         [$($param:tt)*]
         [ < $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @angles
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*] [$($param)*]
@@ -805,7 +805,7 @@ macro_rules! concat_g {
         [$lifetime:lifetime $($constraint:tt)*]
         [ > ]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @list
             [$callback] [$($callback_args)*]
             [$($list)*]
@@ -819,7 +819,7 @@ macro_rules! concat_g {
         [$ty:ident $($constraint:tt)*]
         [ > ]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @list
             [$callback] [$($callback_args)*]
             [$($list)*]
@@ -833,7 +833,7 @@ macro_rules! concat_g {
         []
         [ > ]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @list
             [$callback] [$($callback_args)*]
             [$($list)*]
@@ -856,7 +856,7 @@ macro_rules! concat_g {
         [$($param:tt)*]
         [$token:tt $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @item
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*]
@@ -881,7 +881,7 @@ macro_rules! concat_g {
         [$($content:tt)*]
         [ < $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @angles
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*] [$($param)*]
@@ -898,7 +898,7 @@ macro_rules! concat_g {
         [$($content:tt)*]
         [ > $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @angles
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*] [$($param)*]
@@ -915,7 +915,7 @@ macro_rules! concat_g {
         [$($content:tt)*]
         [ > $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @item
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*]
@@ -931,7 +931,7 @@ macro_rules! concat_g {
         [$($content:tt)*]
         [ $token:tt $($tail:tt)*]
     ) => {
-        $crate::concat_g! {
+        $crate::concat_g_impl! {
             @angles
             [$callback] [$($callback_args)*] [$($list)*]
             [$($lifetimes)*] [$($types)*] [$($param)*]
@@ -947,6 +947,136 @@ macro_rules! concat_g {
         [$($outer_levels:tt)*]
         [$($content:tt)*]
         []
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! concat_r_impl {
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::concat_r_impl! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[ < $($item:tt)* ] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::concat_r_impl! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+            [, $($item)*]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        [[$($item:tt)*] $($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+    ) => {
+        $crate::std_compile_error!("invalid generics");
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [] []
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            []
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [$([$($lifetime:tt)*])+] []
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($lifetime)*),+ > ]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [] [$([$($ty:tt)*])+]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($ty)*),+ > ]
+        }
+    };
+    (
+        @list
+        [$callback:path] [$($callback_args:tt)*]
+        []
+        [$([$($lifetime:tt)*])+] [$([$($ty:tt)*])+]
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ < $($($lifetime)*),+ , $($($ty)*),+ > ]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [, $lifetime:lifetime $($tail:tt)*]
+    ) => {
+        $crate::concat_r_impl! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)* [$lifetime]] [$($types)*]
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [, $ty:ident $($tail:tt)*]
+    ) => {
+        $crate::concat_r_impl! {
+            @item
+            [$callback] [$($callback_args)*] [$($list)*]
+            [$($lifetimes)*] [$($types)* [$ty]]
+            [$($tail)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [ $(,)? > ]
+    ) => {
+        $crate::concat_r_impl! {
+            @list
+            [$callback] [$($callback_args)*]
+            [$($list)*]
+            [$($lifetimes)*] [$($types)*]
+        }
+    };
+    (
+        @item
+        [$callback:path] [$($callback_args:tt)*] [$($list:tt)*]
+        [$($lifetimes:tt)*] [$($types:tt)*]
+        [$($tail:tt)*]
     ) => {
         $crate::std_compile_error!("invalid generics");
     };
@@ -1033,10 +1163,10 @@ mod tests {
     macro_rules! struct_A {
         (
         ) => {
-            concat_g! {
+            concat_g_impl! {
                 @list
                 [struct_A] [@struct]
-                [[ < 'a, 'b > ] [ < 'c, 'd, T, > ]]
+                [[ < 'a, 'b > ] [] [ < 'c, 'd, T: 'static, > ]]
                 [] []
             }
         };
@@ -1055,8 +1185,41 @@ mod tests {
     struct_A!();
 
     #[test]
-    fn run_concat_g() {
+    fn run_concat_g_impl() {
         let x = A { a: &(), b: &(), c: &(), d: &0u16 };
+        let _ = x.a;
+        let _ = x.b;
+        let _ = x.c;
+        let _ = x.d;
+    }
+
+    macro_rules! struct_B {
+        (
+        ) => {
+            concat_r_impl! {
+                @list
+                [struct_B] [@struct]
+                [[ < 'a, 'b > ] [] [ < 'c, 'd, T, > ]]
+                [] []
+            }
+        };
+        (
+            @struct [$($g:tt)*]
+        ) => {
+            struct B $($g)* {
+                a: &'a (),
+                b: &'b (),
+                c: &'c (),
+                d: &'d T,
+            }
+        };
+    }
+
+    struct_B!();
+
+    #[test]
+    fn run_concat_r_impl() {
+        let x = B { a: &(), b: &(), c: &(), d: &0u16 };
         let _ = x.a;
         let _ = x.b;
         let _ = x.c;
