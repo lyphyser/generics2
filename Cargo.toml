@@ -1,9 +1,9 @@
 [package]
 edition = "2018"
 name = "generics"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["warlock <internalmike@gmail.com>"]
-description = "Provides macros for parsing generics and where clauses in `macro_rules!`."
+description = "Provides macros for parsing generics (with optional where clause) in `macro_rules!`."
 readme = "README.md"
 documentation = "https://docs.rs/generics/"
 keywords = ["macro", "parser", "generics", "where", "macro_rules"]
