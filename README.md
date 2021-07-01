@@ -1,5 +1,3 @@
-![travis](https://travis-ci.org/A1-Triard/generics-parse.svg?branch=master)
-
 # generics-parse
 
 Provides macros for parsing generics and where clauses in `macro_rules!`.
