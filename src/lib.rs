@@ -1,5 +1,8 @@
 #![no_std]
 #![deny(warnings)]
+#![doc(test(attr(deny(warnings))))]
+#![doc(test(attr(allow(dead_code))))]
+#![doc(test(attr(allow(unused_variables))))]
 
 #[doc(hidden)]
 pub use core::compile_error as std_compile_error;
