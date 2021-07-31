@@ -165,7 +165,7 @@ macro_rules! parse_generics_impl {
         $crate::parse_generics_impl! {
             @constrained_param [:]
             [$param]
-            []
+            [] []
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
             [$($token)*]
         }
@@ -182,7 +182,7 @@ macro_rules! parse_generics_impl {
         $crate::parse_generics_impl! {
             @constrained_param [=]
             [$param]
-            []
+            [] []
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
         }
@@ -308,7 +308,7 @@ macro_rules! parse_generics_impl {
     (
         @constrained_param [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*]
@@ -318,7 +318,7 @@ macro_rules! parse_generics_impl {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
             [$param]
-            [$($constraint)*]
+            [$($constraint)*] [$($value)*]
             [] []
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
             [$($token)*]
@@ -327,7 +327,7 @@ macro_rules! parse_generics_impl {
     (
         @constrained_param [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*]
@@ -337,16 +337,16 @@ macro_rules! parse_generics_impl {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
             [$param]
-            [$($constraint)*]
+            [$($constraint)*] [$($value)*]
             [] []
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
             [ < $($token)*]
         }
     };
     (
-        @constrained_param [:]
+        @constrained_param [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*]
@@ -359,180 +359,105 @@ macro_rules! parse_generics_impl {
             [$($g)* [$param : $($constraint)*]]
             [$($r)* [$param]]
             []
-            [$($token)*]
-        }
-    };
-    (
-        @constrained_param [:]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ >> $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param : $($constraint)*]]
-            [$($r)* [$param]]
-            []
-            [ > $($token)*]
-        }
-    };
-    (
-        @constrained_param [=]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ > $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param]]
-            [$($r)* [$param]]
-            []
-            [$($token)*]
-        }
-    };
-    (
-        @constrained_param [=]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ >> $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param]]
-            [$($r)* [$param]]
-            []
-            [ > $($token)*]
-        }
-    };
-    (
-        @constrained_param [:]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , > $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param : $($constraint)*]]
-            [$($r)* [$param]]
-            []
-            [$($token)*]
-        }
-    };
-    (
-        @constrained_param [:]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , >> $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param : $($constraint)*]]
-            [$($r)* [$param]]
-            []
-            [ > $($token)*]
-        }
-    };
-    (
-        @constrained_param [=]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , > $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param]]
-            [$($r)* [$param]]
-            []
-            [$($token)*]
-        }
-    };
-    (
-        @constrained_param [=]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , >> $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            @done
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param]]
-            [$($r)* [$param]]
-            []
-            [ > $($token)*]
-        }
-    };
-    (
-        @constrained_param [:]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param : $($constraint)*]]
-            [$($r)* [$param]]
-            [$($token)*]
-        }
-    };
-    (
-        @constrained_param [=]
-        [$param:tt]
-        [$($constraint:tt)*]
-        [$callback:path]
-        [$($callback_args:tt)*]
-        [$($g:tt)*]
-        [$($r:tt)*]
-        [ , $($token:tt)*]
-    ) => {
-        $crate::parse_generics_impl! {
-            [$callback] [$($callback_args)*]
-            [$($g)* [$param]]
-            [$($r)* [$param]]
             [$($token)*]
         }
     };
     (
         @constrained_param [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ >> $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @done
+            [$callback] [$($callback_args)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            []
+            [ > $($token)*]
+        }
+    };
+    (
+        @constrained_param [$kind:tt]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , > $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @done
+            [$callback] [$($callback_args)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            []
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param [$kind:tt]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , >> $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @done
+            [$callback] [$($callback_args)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            []
+            [ > $($token)*]
+        }
+    };
+    (
+        @constrained_param [$kind:tt]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ , $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            [$callback] [$($callback_args)*]
+            [$($g)* [$param : $($constraint)*]]
+            [$($r)* [$param]]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param [:]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ = $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @constrained_param [=]
+            [$param]
+            [$($constraint)*] [$($value)*]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param [:]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*]
@@ -540,17 +465,35 @@ macro_rules! parse_generics_impl {
         [ $x:tt $($token:tt)*]
     ) => {
         $crate::parse_generics_impl! {
-            @constrained_param [$kind]
+            @constrained_param [:]
             [$param]
-            [$($constraint)* $x]
-            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
+            [$($constraint)* $x] [$($value)*]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
+            [$($token)*]
+        }
+    };
+    (
+        @constrained_param [=]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ $x:tt $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @constrained_param [=]
+            [$param]
+            [$($constraint)*] [$($value)* $x]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
             [$($token)*]
         }
     };
     (
         @constrained_param [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($($constraint:tt)+)?] [$($($value:tt)+)?]
         [$callback:path]
         [$($callback_args:tt)*]
         [$($g:tt)*]
@@ -559,14 +502,14 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::std_compile_error!($crate::std_concat!(
             "missing '>' after '",
-            $crate::std_stringify!( < $($($($g)*),+ ,)? $param $kind $($constraint)* ),
+            $crate::std_stringify!( < $($($($g)*),+ ,)? $param $( : $($constraint)+)? $( = $($value)+)? ),
             "'"
         ));
     };
     (
-        @angles_in_constraint [$kind:tt]
+        @angles_in_constraint [:]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         []
         [$callback:path]
@@ -576,17 +519,37 @@ macro_rules! parse_generics_impl {
         [ > $($token:tt)*]
     ) => {
         $crate::parse_generics_impl! {
-            @constrained_param [$kind]
+            @constrained_param [:]
             [$param]
-            [$($constraint)* < $($inside_angles)* > ]
+            [$($constraint)* < $($inside_angles)* > ] [$($value)*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
             [$($token)*]
         }
     };
     (
-        @angles_in_constraint [$kind:tt]
+        @angles_in_constraint [=]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$($inside_angles:tt)*]
+        []
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ > $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @constrained_param [=]
+            [$param]
+            [$($constraint)*] [$($value)* < $($inside_angles)* > ]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
+            [$($token)*]
+        }
+    };
+    (
+        @angles_in_constraint [:]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         []
         [$callback:path]
@@ -596,17 +559,37 @@ macro_rules! parse_generics_impl {
         [ >> $($token:tt)*]
     ) => {
         $crate::parse_generics_impl! {
-            @constrained_param [$kind]
+            @constrained_param [:]
             [$param]
-            [$($constraint)* < $($inside_angles)* > ]
-            [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
+            [$($constraint)* < $($inside_angles)* > ] [$($value)*]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
+            [ > $($token)*]
+        }
+    };
+    (
+        @angles_in_constraint [=]
+        [$param:tt]
+        [$($constraint:tt)*] [$($value:tt)*]
+        [$($inside_angles:tt)*]
+        []
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
+        [ >> $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @constrained_param [=]
+            [$param]
+            [$($constraint)*] [$($value)* < $($inside_angles)* > ]
+            [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
             [ > $($token)*]
         }
     };
     (
         @angles_in_constraint [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         [[$($parent_level:tt)*] $([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -617,7 +600,8 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
-            [$param] [$($constraint)*]
+            [$param]
+            [$($constraint)*] [$($value)*]
             [$($parent_level)* < $($inside_angles)* > ]
             [$([$($outer_levels)*])*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
@@ -627,7 +611,7 @@ macro_rules! parse_generics_impl {
     (
         @angles_in_constraint [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         [[$($parent_level:tt)*] $([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -638,7 +622,8 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
-            [$param] [$($constraint)*]
+            [$param]
+            [$($constraint)*] [$($value)*]
             [$($parent_level)* < $($inside_angles)* > ]
             [$([$($outer_levels)*])*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
@@ -648,7 +633,7 @@ macro_rules! parse_generics_impl {
     (
         @angles_in_constraint [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -659,7 +644,8 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
-            [$param] [$($constraint)*]
+            [$param]
+            [$($constraint)*] [$($value)*]
             []
             [[$($inside_angles:tt)*] $([$($outer_levels)*])*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*]
@@ -669,7 +655,7 @@ macro_rules! parse_generics_impl {
     (
         @angles_in_constraint [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -680,7 +666,8 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
-            [$param] [$($constraint)*]
+            [$param]
+            [$($constraint)*] [$($value)*]
             []
             [[$($inside_angles:tt)*] $([$($outer_levels)*])*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
@@ -690,7 +677,7 @@ macro_rules! parse_generics_impl {
     (
         @angles_in_constraint [$kind:tt]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($value:tt)*]
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -701,7 +688,8 @@ macro_rules! parse_generics_impl {
     ) => {
         $crate::parse_generics_impl! {
             @angles_in_constraint [$kind]
-            [$param] [$($constraint)*]
+            [$param]
+            [$($constraint)*] [$($value)*]
             [$($inside_angles)* $x]
             [$([$($outer_levels)*])*]
             [$callback] [$($callback_args)*] [$($g)*] [$($r)*] 
@@ -709,9 +697,9 @@ macro_rules! parse_generics_impl {
         }
     };
     (
-        @angles_in_constraint [$kind:tt]
+        @angles_in_constraint [:]
         [$param:tt]
-        [$($constraint:tt)*]
+        [$($constraint:tt)*] [$($($value:tt)+)?]
         [$($inside_angles:tt)*]
         [$([$($outer_levels:tt)*])*]
         [$callback:path]
@@ -723,8 +711,31 @@ macro_rules! parse_generics_impl {
         $crate::std_compile_error!($crate::std_concat!(
             "missing '>' after '",
             $crate::std_stringify!(
-                < $($($($g)*),+ ,)? $param $kind $($constraint)*
-                $( < $($outer_levels)* )* < $($inside_angles)*
+                < $($($($g)*),+ ,)? $param
+                : $($constraint)* $( < $($outer_levels)* )* < $($inside_angles)*
+                $( = $($value)+)?
+            ),
+            "'"
+        ));
+    };
+    (
+        @angles_in_constraint [=]
+        [$param:tt]
+        [$($($constraint:tt)+)?] [$($value:tt)*]
+        [$($inside_angles:tt)*]
+        [$([$($outer_levels:tt)*])*]
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($([$($g:tt)*])+)?]
+        [$($r:tt)*]
+        []
+    ) => {
+        $crate::std_compile_error!($crate::std_concat!(
+            "missing '>' after '",
+            $crate::std_stringify!(
+                < $($($($g)*),+ ,)? $param
+                $( : $($constraint)+)?
+                = $($value)* $( < $($outer_levels)* )* < $($inside_angles)*
             ),
             "'"
         ));
@@ -1535,6 +1546,12 @@ mod tests {
         struct TestGenericStructWithDefaultParameter<T=()>(T);
     }
 
+    struct TestGenericStructWithConstrainedDefaultParameter<T: 'static = ()>(T);
+
+    impl_test_trait! {
+        struct TestGenericStructWithConstrainedDefaultParameter<T: 'static = ()>(T);
+    }
+
     #[test]
     fn it_works() {
         let test_struct = TestStruct { };
@@ -1548,8 +1565,10 @@ mod tests {
         let _: &dyn TestTrait = &test_generic_struct;
         let test_generic_struct_ = TestGenericStructWithDefaultParameter(());
         let _: &dyn TestTrait = &test_generic_struct_;
-        let _ = test_generic_struct.a;
-        let _ = test_generic_struct.t;
+        let _ = test_generic_struct_.0;
+        let test_generic_struct__ = TestGenericStructWithConstrainedDefaultParameter(());
+        let _: &dyn TestTrait = &test_generic_struct__;
+        let _ = test_generic_struct__.0;
     }
 
     macro_rules! impl_tr {
