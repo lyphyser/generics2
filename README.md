@@ -1,4 +1,4 @@
-# generics-parse
+# generics2
 
 Provides macros for parsing generics and where clauses in `macro_rules!`.
 
@@ -6,7 +6,7 @@ Provides macros for parsing generics and where clauses in `macro_rules!`.
 pub trait TheTrait { }
 
 #[doc(hidden)]
-pub use generics::parse as generics_parse;
+pub use generics2::parse as generics_parse;
 #[doc(hidden)]
 pub use std::compile_error as std_compile_error;
 

@@ -1,12 +1,12 @@
 [package]
 edition = "2018"
-name = "generics"
-version = "0.3.2"
-authors = ["warlock <internalmike@gmail.com>"]
-description = "Provides macros for parsing generics (with optional where clause) in `macro_rules!`."
+name = "generics2"
+version = "0.3.3"
+authors = ["lyphyser <lyphyser@gmail.com>", "warlock <internalmike@gmail.com>"]
+description = "Provides macros for parsing generics (with optional where clause) in `macro_rules!` - enhanced fork of generics."
 readme = "README.md"
-documentation = "https://docs.rs/generics/"
+documentation = "https://docs.rs/generics2/"
 keywords = ["macro", "parser", "generics", "where", "macro_rules"]
 categories = ["rust-patterns", "no-std"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/A1-Triard/generics"
+repository = "https://github.com/lyphyser/generics2"
