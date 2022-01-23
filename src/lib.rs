@@ -263,6 +263,22 @@ macro_rules! parse_generics_impl {
         [$($callback_args:tt)*]
         [$($g:tt)*]
         [$($r:tt)*]
+        [> $($token:tt)*]
+    ) => {
+        $crate::parse_generics_impl! {
+            @done
+            [$callback] [$($callback_args)*]
+            [$($g)*]
+            [$($r)*]
+            []
+            [$($token)*]
+        }
+    };
+    (
+        [$callback:path]
+        [$($callback_args:tt)*]
+        [$($g:tt)*]
+        [$($r:tt)*]
         [$x:tt $($token:tt)*]
     ) => {
         $crate::std_compile_error!($crate::std_concat!(
@@ -875,8 +891,8 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)+]
-        [$($r:tt)+]
+        [$($g:tt)*]
+        [$($r:tt)*]
         [$($inter:tt)*]
         [ ; $($token:tt)*]
     ) => {
@@ -895,8 +911,8 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)+]
-        [$($r:tt)+]
+        [$($g:tt)*]
+        [$($r:tt)*]
         [$($inter:tt)*]
         [ $( { $($body:tt)* } $($token:tt)* )? ]
     ) => {
@@ -915,8 +931,8 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)+]
-        [$($r:tt)+]
+        [$($g:tt)*]
+        [$($r:tt)*]
         [$($inter:tt)*]
         [where $($token:tt)*]
     ) => {
@@ -932,16 +948,16 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$($g:tt)+]
-        [$($r:tt)+]
+        [$($g:tt)*]
+        [$($r:tt)*]
         [$($inter:tt)*]
         [$token:tt $($other_tokens:tt)*]
     ) => {
         $crate::parse_generics_impl! {
             @done
             [$callback] [$($callback_args)*]
-            [$($g)+]
-            [$($r)+]
+            [$($g)*]
+            [$($r)*]
             [$($inter)* $token]
             [$($other_tokens)*]
         }
