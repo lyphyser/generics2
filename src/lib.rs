@@ -87,6 +87,123 @@ macro_rules! parse {
     (
         $callback:path { $($callback_args:tt)* } < $($token:tt)*
     ) => {
+        $crate::parse_generics_impl! { [$crate::parse_callback] [$callback [$($callback_args)*]] [] [] [$($token)*] }
+    };
+    (
+        $callback:path { $($callback_args:tt)* } $($token:tt)*
+    ) => {
+        $crate::deny_where_clause_impl! { [$crate::parse_callback] [$callback [$($callback_args)*]] [] [$($token)*] }
+    };
+}
+
+/// Callback for `parse_raw` that calls a callback for `parse` 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! parse_callback {
+    (
+        $callback:path
+        [$($callback_args:tt)*]
+        [
+            [$([$([$($g:tt)*])*])?]
+            [$([$([$($r:tt)*])*])?]
+            [$($w:tt)*]
+            $($extra:tt)*
+        ]
+        $($rest:tt)*
+    ) => {
+        $callback ! {
+            $($callback_args)*
+            [ $(< $($($g)*),+ >)? ]
+            [ $(< $($($r)*),+ >)? ]
+            [$($w)*]
+            $($rest)*
+        }
+    };
+}
+
+/// Parses (optional) generics and (optional) subsequent where clause, keeping the structure of the parsed information.
+///
+/// This macro accepts an input in the following form:
+///
+/// ```ignore
+/// $callback_macro { $($callback_macro_args)* }
+/// $(
+///     < $generics >
+///     $( $tokens_between_generics_and_where_clause )*
+///     $(
+///         where $where_clause
+///     )?
+/// )?
+/// $(
+///     $( ; | { $($body)* } )
+///     $($remaining_tokens)*
+/// )?
+/// ```
+///
+/// and expands into
+///
+/// ```ignore
+/// $callback_macro! {
+///     $( $callback_macro_args )*
+///     [
+///        [ $( [ $([ $generics ])* ] )? ]
+///        [ $( [ $([ $generics_without_constraints ]) ] )? ]
+///        [ $( where $where_clause )? ]
+///        $($extra_reserved_for_future_expansion:tt)*
+///     ]
+///     $($( $tokens_between_generics_and_where_clause )*)?
+///     $(
+///         $( ; | { $($body)* } )
+///         $($remaining_tokens)*
+///     )?
+/// }
+/// ```
+///
+/// The $extra_reserved_for_future_expansion ends with multiple placeholders to force users
+/// to use a wildcard match rather than an exact match, allowing to add new data
+/// in future crate versions without breaking compatibility.
+///
+/// # Examples
+///
+/// ```rust
+/// pub trait TheTrait { }
+///
+/// #[doc(hidden)]
+/// pub use generics::parse as generics_parse;
+/// #[doc(hidden)]
+/// pub use std::compile_error as std_compile_error;
+///
+/// #[macro_export]
+/// macro_rules! impl_the_trait {
+///     (
+///         $name:ident $($token:tt)*
+///     ) => {
+///         $crate::generics_parse! {
+///             $crate::impl_the_trait {
+///                 @impl $name
+///             }
+///             $($token)*
+///         }
+///     };
+///     (
+///         @impl $name:ident [[$([$([$($g:tt)*])*])?] [$([$([$($r:tt)*])*])?] [$(where $($w:tt)*)?] $($extra:tt)*]
+///     ) => {
+///         impl $(<$($($g)*),*>)? $crate::TheTrait for $name $(<$($($r)*),*>)? $(where $($w)*)? { }
+///     };
+///     (
+///         @impl $name:ident [[$($g:tt)*] [$($r:tt)*] [$($w:tt)*] $($extra:tt)*] $($token:tt)+ 
+///     ) => {
+///         $crate::std_compile_error!(
+///             "invalid input, allowed input is '$name $( < $generics > $(where $where_clause)? )?'"
+///         );
+///     };
+/// }
+/// ```
+#[macro_export]
+macro_rules! parse_raw {
+    (
+        $callback:path { $($callback_args:tt)* } < $($token:tt)*
+    ) => {
         $crate::parse_generics_impl! { [$callback] [$($callback_args)*] [] [] [$($token)*] }
     };
     (
@@ -758,16 +875,19 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$([$($g:tt)*])+]
-        [$([$($r:tt)*])+]
+        [$($g:tt)+]
+        [$($r:tt)+]
         [$($inter:tt)*]
         [ ; $($token:tt)*]
     ) => {
         $callback ! {
             $($callback_args)*
-            [ < $($($g)*),+ > ]
-            [ < $($($r)*),+ > ]
-            []
+            [
+                [ [$($g)*] ]
+                [ [$($r)*] ]
+                []
+                $crate $crate
+            ]
             $($inter)* ; $($token)*
         }
     };
@@ -775,16 +895,19 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$([$($g:tt)*])+]
-        [$([$($r:tt)*])+]
+        [$($g:tt)+]
+        [$($r:tt)+]
         [$($inter:tt)*]
         [ $( { $($body:tt)* } $($token:tt)* )? ]
     ) => {
         $callback ! {
             $($callback_args)*
-            [ < $($($g)*),+ > ]
-            [ < $($($r)*),+ > ]
-            []
+            [
+                [ [$($g)*] ]
+                [ [$($r)*] ]
+                []
+                $crate $crate
+            ]
             $($inter)* $( { $($body)* } $($token)* )?
         }
     };
@@ -792,16 +915,16 @@ macro_rules! parse_generics_impl {
         @done
         [$callback:path]
         [$($callback_args:tt)*]
-        [$([$($g:tt)*])+]
-        [$([$($r:tt)*])+]
+        [$($g:tt)+]
+        [$($r:tt)+]
         [$($inter:tt)*]
         [where $($token:tt)*]
     ) => {
         $crate::parse_where_clause_impl! {
             [$callback]
             [$($callback_args)*]
-            [ < $($($g)*),+ > ]
-            [ < $($($r)*),+ > ]
+            [ [$($g)*] ]
+            [ [$($r)*] ]
             [] [$($inter)*] [$($token)*]
         }
     };
@@ -838,9 +961,12 @@ macro_rules! parse_where_clause_impl {
     ) => {
         $callback ! { 
             $($callback_args)*
-            [$($g)*]
-            [$($r)*]
-            [$(where $($w)+)?]
+            [
+                [$($g)*]
+                [$($r)*]
+                [$(where $($w)+)?]
+                $crate $crate
+            ]
             $($inter)* ; $($token)*
         }
     };
@@ -854,9 +980,12 @@ macro_rules! parse_where_clause_impl {
     ) => {
         $callback ! { 
             $($callback_args)*
-            [$($g)*]
-            [$($r)*]
-            [$(where $($w)+)?]
+            [
+                [$($g)*]
+                [$($r)*]
+                [$(where $($w)+)?]
+                $crate $crate
+            ]
             $($inter)* $( { $($body)* } $($token)* )?
         }
     };
@@ -890,9 +1019,12 @@ macro_rules! deny_where_clause_impl {
     ) => {
         $callback ! {
             $($callback_args)*
-            []
-            []
-            []
+            [
+                []
+                []
+                []
+                $crate $crate
+            ]
             $($inter)* ; $($token)*
         }
     };
@@ -904,9 +1036,12 @@ macro_rules! deny_where_clause_impl {
     ) => {
         $callback ! {
             $($callback_args)*
-            []
-            []
-            []
+            [
+                []
+                []
+                []
+                $crate $crate
+            ]
             $($inter)* $( { $($body)* } $($token)* )?
         }
     };
