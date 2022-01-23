@@ -92,7 +92,7 @@ macro_rules! parse {
     (
         $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
-        $crate::deny_where_clause_impl! { [$crate::parse_callback] [$callback [$($callback_args)*]] [] [$($token)*] }
+        $crate::allow_where_clause_impl! { [$crate::parse_callback] [$callback [$($callback_args)*]] [] [$($token)*] }
     };
 }
 
@@ -209,7 +209,7 @@ macro_rules! parse_raw {
     (
         $callback:path { $($callback_args:tt)* } $($token:tt)*
     ) => {
-        $crate::deny_where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
+        $crate::allow_where_clause_impl! { [$callback] [$($callback_args)*] [] [$($token)*] }
     };
 }
 
@@ -1010,7 +1010,7 @@ macro_rules! parse_where_clause_impl {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! deny_where_clause_impl {
+macro_rules! allow_where_clause_impl {
     (
         [$callback:path]
         [$($callback_args:tt)*]
@@ -1051,7 +1051,14 @@ macro_rules! deny_where_clause_impl {
         [$($inter:tt)*]
         [where $($token:tt)*]
     ) => {
-        $crate::std_compile_error!("unexpected 'where' without generics preceding");
+        $crate::parse_where_clause_impl! { 
+            [$callback]
+            [$($callback_args)*]
+            [] []
+            []
+            [$($inter)*]
+            [$($token)*]
+        }
     };
     (
         [$callback:path]
@@ -1059,7 +1066,7 @@ macro_rules! deny_where_clause_impl {
         [$($inter:tt)*]
         [$token:tt $($other_tokens:tt)*]
     ) => {
-        $crate::deny_where_clause_impl! {
+        $crate::allow_where_clause_impl! {
             [$callback] [$($callback_args)*]
             [$($inter)* $token]
             [$($other_tokens)*]
